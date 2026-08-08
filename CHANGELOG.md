@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.0](https://github.com/IamMrCupp/apptracker/compare/apptracker-v0.1.0...apptracker-v0.2.0) (2026-08-08)
+
+
+### Features
+
+* **auth:** lock out login after repeated failures ([2c4c828](https://github.com/IamMrCupp/apptracker/commit/2c4c8280196852cdc13a060284f22ff0056842f9))
+* **auth:** lock out login after repeated failures ([f54ebf0](https://github.com/IamMrCupp/apptracker/commit/f54ebf0eb9e389b3e07fe8c8d7617acd0306911d))
+* **auth:** set Secure on the session cookie for TLS requests ([b15f110](https://github.com/IamMrCupp/apptracker/commit/b15f1108133060845087b42a4e33672ae6b5a5d1))
+* **auth:** set Secure on the session cookie for TLS requests ([756f7f2](https://github.com/IamMrCupp/apptracker/commit/756f7f29e0e5142cb0901d7a67c52b95b698575f))
+
+
+### Bug Fixes
+
+* **deploy:** set APP_SESSION_KEY so sessions survive pod restarts ([2b82977](https://github.com/IamMrCupp/apptracker/commit/2b82977ffdc915d6ff748c4331ef061940eefb1c))
+* **deploy:** set APP_SESSION_KEY so sessions survive pod restarts ([b3bb046](https://github.com/IamMrCupp/apptracker/commit/b3bb0465a7ea06dd389055138352ea22864958f0))
+
 ## 0.1.0 (2026-08-08)
 
 
