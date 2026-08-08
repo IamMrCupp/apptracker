@@ -1,0 +1,71 @@
+name: Publish
+
+on:
+  # Publishing on every main merge means the workflow is exercised continuously
+  # rather than only discovered to be broken at release time.
+  push:
+    branches: [main]
+  # Fired by release-please merging its release PR.
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  # Never cancel a publish midway — a half-pushed manifest is worse than a queue.
+  cancel-in-progress: false
+
+env:
+  # Hardcoded lowercase rather than ${{ github.repository }}, which is
+  # mixed-case ("IamMrCupp/apptracker") while GHCR requires lowercase. This
+  # literal must match the image name in deploy/base/kustomization.yaml.
+  IMAGE: ghcr.io/iammrcupp/apptracker
+
+jobs:
+  publish:
+    name: build and push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # No QEMU: the Dockerfile pins its build stage to $BUILDPLATFORM and
+      # cross-compiles via GOARCH, so arm64 costs roughly nothing.
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=sha,format=short
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # Keeps the manifest list to exactly the two real platforms. With
+          # provenance on, buildx adds "unknown/unknown" entries that make
+          # `docker manifest inspect` output confusing. Worth revisiting if
+          # supply-chain attestation becomes a goal.
+          provenance: false

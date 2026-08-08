@@ -1,14 +1,18 @@
 # ---- build stage ----
-FROM golang:1.25-alpine AS build
+# Pinned to the *build* platform so a multi-arch build cross-compiles instead of
+# running the whole toolchain under QEMU. Pure Go with CGO off makes this free.
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS build
 WORKDIR /src
 
-# cache deps first
+# cache deps first — arch-independent, so this layer is shared across platforms
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+# Declared after the source copy so the dependency layer above stays shared.
+ARG TARGETOS TARGETARCH
 # Pure-Go SQLite (modernc) => CGO off => fully static binary.
-RUN CGO_ENABLED=0 GOOS=linux go build \
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build \
     -trimpath -ldflags="-s -w" \
     -o /out/apptracker ./cmd/apptracker
 
