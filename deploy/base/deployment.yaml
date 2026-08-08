@@ -37,6 +37,14 @@ spec:
                 secretKeyRef:
                   name: apptracker-auth
                   key: password
+            # Without a stable signing key the app generates a random one at
+            # startup, so every pod restart silently logs you out. Optional in
+            # the sense that the app still runs — but you want this set.
+            - name: APP_SESSION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: apptracker-auth
+                  key: sessionKey
           volumeMounts:
             - name: data
               mountPath: /data
