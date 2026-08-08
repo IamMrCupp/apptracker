@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -87,5 +88,65 @@ func TestTamperedAndExpiredCookieRejected(t *testing.T) {
 	req2.AddCookie(&http.Cookie{Name: cookieName, Value: token})
 	if a.Authed(req2) {
 		t.Fatal("expired cookie should be rejected")
+	}
+}
+
+// loginCookie drives a login and returns the Set-Cookie the handler produced.
+func loginCookie(t *testing.T, a *Authenticator, decorate func(*http.Request)) *http.Cookie {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/api/login",
+		strings.NewReader(`{"password":"hunter2"}`))
+	if decorate != nil {
+		decorate(req)
+	}
+	rr := httptest.NewRecorder()
+	a.LoginHandler(rr, req)
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("login failed: %d", rr.Code)
+	}
+	for _, c := range rr.Result().Cookies() {
+		if c.Name == cookieName {
+			return c
+		}
+	}
+	t.Fatal("no session cookie set")
+	return nil
+}
+
+// Plain HTTP has to keep working — `docker compose up` on http://localhost is
+// the documented quickstart, and a Secure cookie would silently break it.
+func TestCookieNotSecureOverPlainHTTP(t *testing.T) {
+	a, err := New("hunter2", "test-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c := loginCookie(t, a, nil); c.Secure {
+		t.Fatal("expected Secure unset on a plain HTTP request")
+	}
+}
+
+func TestCookieSecureBehindTLSTerminatingProxy(t *testing.T) {
+	a, err := New("hunter2", "test-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := loginCookie(t, a, func(r *http.Request) {
+		r.Header.Set("X-Forwarded-Proto", "https")
+	})
+	if !c.Secure {
+		t.Fatal("expected Secure when X-Forwarded-Proto is https")
+	}
+}
+
+func TestCookieSecureOnDirectTLS(t *testing.T) {
+	a, err := New("hunter2", "test-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := loginCookie(t, a, func(r *http.Request) {
+		r.TLS = &tls.ConnectionState{}
+	})
+	if !c.Secure {
+		t.Fatal("expected Secure when the request arrived over TLS")
 	}
 }
