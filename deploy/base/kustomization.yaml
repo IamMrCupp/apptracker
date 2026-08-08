@@ -10,7 +10,7 @@ resources:
 
 # Image tag is managed here (or by Flux image-automation writing this field).
 images:
-  - name: ghcr.io/aaron/apptracker
+  - name: ghcr.io/iammrcupp/apptracker
     newTag: 0.1.0
 
 # Password Secret is NOT stored in plaintext git — see deploy/flux/secret.sops.yaml
