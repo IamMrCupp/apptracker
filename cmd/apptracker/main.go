@@ -29,8 +29,8 @@ func main() {
 	var (
 		addr    = ":" + env("PORT", "8080")
 		dbPath  = env("DB_PATH", "apptracker.db")
-		passwd  = os.Getenv("APP_PASSWORD")     // empty => open access
-		signKey = os.Getenv("APP_SESSION_KEY")  // empty => random (sessions reset on restart)
+		passwd  = os.Getenv("APP_PASSWORD")    // empty => open access
+		signKey = os.Getenv("APP_SESSION_KEY") // empty => random (sessions reset on restart)
 	)
 
 	st, err := store.Open(dbPath)

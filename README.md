@@ -1,5 +1,7 @@
 # apptracker
 
+[![CI](https://github.com/IamMrCupp/apptracker/actions/workflows/ci.yml/badge.svg)](https://github.com/IamMrCupp/apptracker/actions/workflows/ci.yml)
+
 A self-hosted **job applications & networking tracker** — a privacy-first tool
 in the spirit of Arch & Bridge's tracker, but backed by a real database so your
 data lives in *your* cluster and syncs across every device you log in from,
