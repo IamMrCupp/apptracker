@@ -29,9 +29,10 @@ Dropdown defaults (edit in `web/static/app.js`): **Lane** Priority/Active/Backbu
 
 | Var               | Default           | Purpose                                             |
 |-------------------|-------------------|-----------------------------------------------------|
-| `PORT`            | `8080`            | Listen port                                         |
-| `DB_PATH`         | `apptracker.db`   | SQLite file path                                    |
+| `PORT`            | `8080`            | Listen port. If unset and 8080 is taken, a free port is chosen and logged. If set explicitly and taken, the app exits — you asked for that port. |
+| `DB_PATH`         | *(see below)*     | SQLite file path. Unset: `~/Library/Application Support/apptracker/apptracker.db` on macOS, `$XDG_CONFIG_HOME/apptracker/` on Linux. The container image sets it explicitly to `/data/apptracker.db`. |
 | `APP_PASSWORD`    | *(empty)*         | Empty = open access. Set to require login.          |
+| `APP_OPEN_BROWSER`| *(empty)*         | Any non-empty value opens a browser at startup. Off by default — the same binary runs as a server. |
 | `APP_SESSION_KEY` | *(random)*        | Stable HMAC key so sessions survive restarts. **Set this in any long-running deployment** — unset means a fresh random key each start, so every restart logs you out. Generate with `openssl rand -base64 48`. Changing it invalidates all sessions, which is also how you force a logout everywhere. |
 
 ## Run locally

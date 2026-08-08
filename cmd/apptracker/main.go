@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -27,11 +28,21 @@ func env(key, def string) string {
 
 func main() {
 	var (
+		portSet = os.Getenv("PORT") != ""
 		addr    = ":" + env("PORT", "8080")
-		dbPath  = env("DB_PATH", "apptracker.db")
 		passwd  = os.Getenv("APP_PASSWORD")    // empty => open access
 		signKey = os.Getenv("APP_SESSION_KEY") // empty => random (sessions reset on restart)
 	)
+
+	dbPath, err := resolveDBPath(os.Getenv, os.UserConfigDir)
+	if err != nil {
+		log.Fatalf("resolve db path: %v", err)
+	}
+	if dir := filepath.Dir(dbPath); dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			log.Fatalf("create data dir %s: %v", dir, err)
+		}
+	}
 
 	st, err := store.Open(dbPath)
 	if err != nil {
@@ -51,22 +62,31 @@ func main() {
 	fileServer := http.FileServer(http.FS(web.FS()))
 	mux.Handle("/", fileServer)
 
+	ln, err := listen(addr, portSet)
+	if err != nil {
+		log.Fatalf("listen on %s: %v", addr, err)
+	}
+
 	httpServer := &http.Server{
-		Addr:              addr,
 		Handler:           mux,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
+	url := browserURL(ln.Addr().String())
 	go func() {
 		mode := "open (no password)"
 		if authr.Enabled() {
 			mode = "password-protected"
 		}
-		log.Printf("apptracker listening on %s | db=%s | auth=%s", addr, dbPath, mode)
-		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Printf("apptracker listening on %s | db=%s | auth=%s", url, dbPath, mode)
+		if err := httpServer.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("server: %v", err)
 		}
 	}()
+
+	if shouldOpenBrowser(os.Getenv) {
+		openBrowser(url)
+	}
 
 	// Graceful shutdown on SIGINT/SIGTERM (k8s sends SIGTERM).
 	stop := make(chan os.Signal, 1)
