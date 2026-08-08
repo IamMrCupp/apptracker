@@ -16,17 +16,60 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 const cookieName = "apptracker_session"
 const sessionTTL = 30 * 24 * time.Hour
 
+// Login throttling. This is a single-user app, so one global counter is the
+// whole story — no per-IP map, no eviction, no unbounded growth. The lockout
+// deliberately applies to the correct password too: gating only wrong guesses
+// would let an attacker keep probing at full speed.
+const (
+	maxLoginFailures = 5
+	lockoutWindow    = time.Minute
+)
+
 // Authenticator holds the configured password and signing key.
 type Authenticator struct {
 	password string
 	key      []byte
 	now      func() time.Time
+
+	mu          sync.Mutex
+	failures    int
+	lockedUntil time.Time
+}
+
+// lockedFor returns the remaining lockout, or zero if logins are allowed.
+func (a *Authenticator) lockedFor() time.Duration {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if d := a.lockedUntil.Sub(a.now()); d > 0 {
+		return d
+	}
+	return 0
+}
+
+// noteFailure records a bad password and starts a lockout at the threshold.
+func (a *Authenticator) noteFailure() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.failures++
+	if a.failures >= maxLoginFailures {
+		a.lockedUntil = a.now().Add(lockoutWindow)
+		a.failures = 0
+	}
+}
+
+// noteSuccess clears the failure budget.
+func (a *Authenticator) noteSuccess() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.failures = 0
+	a.lockedUntil = time.Time{}
 }
 
 // New builds an Authenticator. An empty password disables auth entirely.
@@ -95,6 +138,11 @@ func (a *Authenticator) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
+	if d := a.lockedFor(); d > 0 {
+		w.Header().Set("Retry-After", strconv.Itoa(int(d.Seconds())+1))
+		http.Error(w, "too many attempts", http.StatusTooManyRequests)
+		return
+	}
 	var body struct {
 		Password string `json:"password"`
 	}
@@ -103,9 +151,11 @@ func (a *Authenticator) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !a.checkPassword(body.Password) {
+		a.noteFailure()
 		http.Error(w, "invalid password", http.StatusUnauthorized)
 		return
 	}
+	a.noteSuccess()
 	exp := a.now().Add(sessionTTL).Unix()
 	http.SetCookie(w, &http.Cookie{
 		Name:     cookieName,
