@@ -23,7 +23,7 @@ spec:
         fsGroup: 65532          # let the pod write to the PVC
       containers:
         - name: apptracker
-          image: ghcr.io/aaron/apptracker:0.1.0   # set by CI / image automation
+          image: ghcr.io/iammrcupp/apptracker:0.1.0   # set by CI / image automation
           ports:
             - name: http
               containerPort: 8080
