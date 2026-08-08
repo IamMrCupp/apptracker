@@ -121,3 +121,13 @@ td a { color: var(--accent); }
   .form-grid { grid-template-columns: 1fr; }
   .brand { width: 100%; }
 }
+
+/* capture.html */
+.capture { max-width: 46rem; padding: 1.5rem; line-height: 1.6; }
+.capture h3 { margin-top: 1.75rem; }
+.capture code { background: rgba(127,127,127,.18); padding: .1rem .35rem; border-radius: 4px; }
+.bookmarklet {
+  display: inline-block; padding: .6rem 1rem; border-radius: 8px;
+  background: #4f7cff; color: #fff; text-decoration: none; font-weight: 600;
+  cursor: grab;
+}

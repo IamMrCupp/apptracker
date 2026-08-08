@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Capture bookmarklet — Applications &amp; Networking Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">Capture bookmarklet</div>
+      <div class="actions"><a href="/"><button>← Back to tracker</button></a></div>
+    </header>
+
+    <main class="capture">
+      <p>
+        Drag this to your bookmarks bar. On a job posting, click it — this
+        tracker opens in a new tab with the entry form already filled in.
+        Nothing is saved until you review it and hit <strong>Save entry</strong>.
+      </p>
+
+      <p><a id="bm" class="bookmarklet" href="#">📋 Capture job</a></p>
+
+      <h3>What it reads</h3>
+      <p>
+        Most job boards publish machine-readable
+        <code>JobPosting</code> markup, because Google for Jobs rewards it —
+        Greenhouse, Lever, Ashby, Workday and a long tail of others. The
+        bookmarklet reads that first, then falls back to the page title and
+        address.
+      </p>
+      <p>
+        <strong>LinkedIn is the weak spot.</strong> Its job pages sit behind a
+        login and publish no such markup, so expect the company and role to
+        need correcting there.
+      </p>
+
+      <h3>Where your data goes</h3>
+      <p>
+        Nowhere new. The bookmarklet reads only the page you are already
+        looking at and passes what it finds to
+        <code id="origin"></code> as a normal link. No extension, no
+        third-party service, no background access to your browsing.
+      </p>
+
+      <h3>If it does not open</h3>
+      <p>
+        Some sites set a Content-Security-Policy strict enough to block
+        bookmarklets. Copy the posting details in by hand there — the tracker
+        works the same either way.
+      </p>
+    </main>
+  </div>
+
+  <script src="capture.js"></script>
+</body>
+</html>

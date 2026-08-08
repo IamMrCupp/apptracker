@@ -38,6 +38,51 @@ async function boot() {
   if (s.authRequired) $("btn-logout").classList.remove("hidden");
   showApp();
   await load();
+  await prefillFromQuery();
+}
+
+// ---- capture prefill ---------------------------------------------------
+// The bookmarklet (see /capture.html) opens this app with the posting it
+// scraped as query params. A top-level navigation still sends the SameSite=Lax
+// session cookie, which is why this needs no CORS and no API token.
+//
+// Values arrive from whatever page the user was on, so they are untrusted:
+// they only ever reach input .value (never innerHTML), and nothing is saved
+// until the user reviews the form and clicks Save.
+const PREFILL_TEXT = ["entity", "context", "comp", "link", "notes"];
+const PREFILL_DATES = ["date", "followUp"];
+const PREFILL_SELECTS = { lane: LANES, channel: CHANNELS, status: STATUSES };
+const PREFILL_MAX = 4000;
+
+async function prefillFromQuery() {
+  const q = new URLSearchParams(location.search);
+  const kind = q.get("add");
+  if (kind !== "application" && kind !== "networking") return;
+
+  if (kind !== mode) {
+    mode = kind;
+    document.querySelectorAll(".mode").forEach((b) =>
+      b.classList.toggle("active", b.dataset.mode === mode));
+    await load();
+  }
+
+  openEditor(0);
+  for (const f of PREFILL_TEXT) {
+    const v = q.get(f);
+    if (v) $("f-" + f).value = v.slice(0, PREFILL_MAX);
+  }
+  for (const f of PREFILL_DATES) {
+    const v = q.get(f);
+    // A date input silently rejects anything that is not yyyy-mm-dd.
+    if (v && /^\d{4}-\d{2}-\d{2}$/.test(v)) $("f-" + f).value = v;
+  }
+  for (const [f, allowed] of Object.entries(PREFILL_SELECTS)) {
+    const v = q.get(f);
+    if (v && allowed.includes(v)) $("f-" + f).value = v;
+  }
+
+  // Drop the params so a refresh does not reopen the editor with stale data.
+  history.replaceState(null, "", location.pathname);
 }
 function showLogin() { $("app").classList.add("hidden"); $("login").classList.remove("hidden"); }
 function showApp() { $("login").classList.add("hidden"); $("app").classList.remove("hidden"); }
