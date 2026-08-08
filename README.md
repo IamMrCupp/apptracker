@@ -94,3 +94,7 @@ sqlite3 /data/apptracker.db ".backup /backup/apptracker-$(date +%F).db"
 ```
 
 Or just use the UI's **Export JSON** to grab a portable snapshot.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
