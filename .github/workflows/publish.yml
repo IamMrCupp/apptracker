@@ -5,9 +5,20 @@ on:
   # rather than only discovered to be broken at release time.
   push:
     branches: [main]
-  # Fired by release-please merging its release PR.
-  release:
-    types: [published]
+
+  # Called by release-please.yml when a release is cut.
+  #
+  # Deliberately NOT `release: [published]`. Releases created with the built-in
+  # GITHUB_TOKEN do not emit workflow-triggering events — GitHub suppresses them
+  # to prevent recursive runs — so a `release:` trigger would sit there looking
+  # correct and never once fire. workflow_call is explicit and testable.
+  workflow_call:
+    inputs:
+      version:
+        description: "Semver to tag, without the leading v. Empty on branch pushes."
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -51,9 +62,9 @@ jobs:
           tags: |
             type=ref,event=branch
             type=sha,format=short
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{version}},value=${{ inputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.version }}
+            type=raw,value=latest,enable=${{ inputs.version != '' }}
 
       - uses: docker/build-push-action@v6
         with:
