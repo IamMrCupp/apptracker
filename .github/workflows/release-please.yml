@@ -3,6 +3,8 @@ name: Release
 on:
   push:
     branches: [main]
+  # Lets a release PR be regenerated without an empty commit to main.
+  workflow_dispatch:
 
 permissions:
   contents: read
