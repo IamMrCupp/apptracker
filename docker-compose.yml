@@ -1,0 +1,19 @@
+services:
+  apptracker:
+    build: .
+    image: apptracker:local
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      DB_PATH: /data/apptracker.db
+      # Uncomment to require a password (any non-empty value turns auth on):
+      # APP_PASSWORD: change-me
+      # Set a stable key so sessions survive restarts (else regenerated each boot):
+      # APP_SESSION_KEY: some-long-random-string
+    volumes:
+      - data:/data
+    restart: unless-stopped
+
+volumes:
+  data:

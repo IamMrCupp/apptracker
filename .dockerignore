@@ -1,0 +1,8 @@
+.git
+*.db
+*.db-wal
+*.db-shm
+/tmp
+apptracker
+apptracker-deploy-example.zip
+/vendor

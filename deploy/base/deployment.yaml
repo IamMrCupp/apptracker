@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apptracker
+  labels:
+    app.kubernetes.io/name: apptracker
+spec:
+  # SQLite is a single file on one RWO volume: exactly one writer.
+  replicas: 1
+  strategy:
+    type: Recreate           # never run two pods against the same DB file
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: apptracker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: apptracker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532        # distroless "nonroot"
+        fsGroup: 65532          # let the pod write to the PVC
+      containers:
+        - name: apptracker
+          image: ghcr.io/aaron/apptracker:0.1.0   # set by CI / image automation
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: DB_PATH
+              value: /data/apptracker.db
+            - name: APP_PASSWORD          # remove this block to run open inside the cluster
+              valueFrom:
+                secretKeyRef:
+                  name: apptracker-auth
+                  key: password
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 3
+            periodSeconds: 15
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits:   { memory: 128Mi }
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: apptracker-data

@@ -1,0 +1,14 @@
+# binaries
+/apptracker
+/dist/
+# local SQLite data
+*.db
+*.db-wal
+*.db-shm
+# secrets — never commit plaintext
+deploy/flux/secret.sops.yaml
+# packaging artifact
+apptracker-deploy-example.zip
+
+# vendored deps (used only for offline builds; not committed)
+/vendor/

@@ -1,0 +1,34 @@
+# Drop this into your fleet/cluster repo (the path Flux already watches).
+# It tells Flux to reconcile deploy/base from your app's GitRepository source.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: apptracker
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./deploy/base
+  prune: true
+  wait: true
+  timeout: 3m
+  sourceRef:
+    kind: GitRepository
+    name: apptracker          # the GitRepository below (or an existing mono-source)
+  # decryption:               # uncomment if the Secret is SOPS-encrypted in git
+  #   provider: sops
+  #   secretRef:
+  #     name: sops-age
+---
+# Only needed if apptracker lives in its own repo. If it's part of a monorepo
+# your cluster already syncs, delete this and point the Kustomization above at
+# your existing GitRepository instead.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: apptracker
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: https://github.com/IamMrCupp/apptracker
+  ref:
+    branch: main

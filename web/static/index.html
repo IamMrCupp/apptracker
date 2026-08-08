@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Applications &amp; Networking Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="login" class="login hidden">
+    <form id="login-form" class="login-card">
+      <h1>Tracker</h1>
+      <p>Enter your password to continue.</p>
+      <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" />
+      <button type="submit">Sign in</button>
+      <div id="login-error" class="login-error"></div>
+    </form>
+  </div>
+
+  <div id="app" class="hidden">
+    <header class="topbar">
+      <div class="brand">Applications &amp; Networking Tracker</div>
+      <div class="modes">
+        <button data-mode="application" class="mode active">Applications</button>
+        <button data-mode="networking" class="mode">Networking</button>
+      </div>
+      <div class="actions">
+        <button id="btn-new" class="primary">+ New entry</button>
+        <div class="menu">
+          <button id="btn-data">Data ▾</button>
+          <div id="data-menu" class="dropdown hidden">
+            <a href="#" data-act="export-json">Export JSON</a>
+            <a href="#" data-act="export-csv">Export CSV</a>
+            <a href="#" data-act="import-json">Import JSON</a>
+            <a href="#" data-act="import-csv">Import CSV</a>
+            <a href="#" data-act="clear" class="danger">Clear this view</a>
+          </div>
+        </div>
+        <button id="btn-logout" class="hidden">Logout</button>
+      </div>
+    </header>
+
+    <div id="banner" class="banner">Your data lives in your cluster. Nothing leaves your infrastructure.</div>
+
+    <main>
+      <table id="grid">
+        <thead>
+          <tr>
+            <th>Lane</th><th class="col-kindlabel">Type</th><th>Company / Contact</th>
+            <th>Role / Context</th><th>Date</th><th>Channel</th><th>Comp</th>
+            <th>Follow up</th><th>Status</th><th>Link</th><th>Notes</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="empty" class="empty hidden">No entries yet. Hit “+ New entry” to add one.</div>
+    </main>
+  </div>
+
+  <!-- Entry editor modal -->
+  <div id="editor" class="modal hidden">
+    <form id="entry-form" class="modal-card">
+      <h2 id="editor-title">New entry</h2>
+      <input type="hidden" id="f-id" />
+      <div class="form-grid">
+        <label>Lane<select id="f-lane"></select></label>
+        <label>Company / Contact<input id="f-entity" /></label>
+        <label>Role / Context<input id="f-context" /></label>
+        <label>Date<input type="date" id="f-date" /></label>
+        <label>Channel<select id="f-channel"></select></label>
+        <label>Comp quoted<input id="f-comp" placeholder="$210k / hourly / TBD" /></label>
+        <label>Follow up on<input type="date" id="f-followUp" /></label>
+        <label>Status<select id="f-status"></select></label>
+        <label class="wide">Link<input id="f-link" placeholder="https://…" /></label>
+        <label class="wide">Job description / context notes<textarea id="f-notes" rows="4"></textarea></label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="btn-cancel">Cancel</button>
+        <button type="submit" class="primary">Save entry</button>
+      </div>
+    </form>
+  </div>
+
+  <input type="file" id="file-input" accept=".json,.csv" class="hidden" />
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apptracker
+  labels:
+    app.kubernetes.io/name: apptracker
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod   # adjust to your setup
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [apptracker.example.com]
+      secretName: apptracker-tls
+  rules:
+    - host: apptracker.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: apptracker
+                port:
+                  name: http
