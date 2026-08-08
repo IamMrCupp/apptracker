@@ -78,10 +78,29 @@ The Deployment is intentionally `replicas: 1` with `strategy: Recreate` and a
 rolling update must never start a second pod against it.
 
 ```sh
-# point the Flux Kustomization/GitRepository at your repo + registry,
-# set the image and Ingress host, then commit — Flux reconciles the rest.
 kubectl apply -k deploy/base            # (or let Flux do it)
 ```
+
+### Edit these before you deploy
+
+Everything in `deploy/` is a working example, but these values are placeholders
+and will not match your cluster:
+
+| Where | Value | Change it to |
+|---|---|---|
+| `deploy/base/ingress.yaml` | host `apptracker.example.com` (twice — `tls.hosts` and `rules.host`) | your hostname |
+| `deploy/base/ingress.yaml` | `ingressClassName: nginx` | your ingress controller |
+| `deploy/base/ingress.yaml` | `cert-manager.io/cluster-issuer: letsencrypt-prod` | your issuer, or drop the annotation and the `tls:` block if you terminate TLS elsewhere |
+| `deploy/base/pvc.yaml` | `storageClassName` (commented out) | uncomment and set, unless your cluster has a default |
+| `deploy/base/kustomization.yaml` | `newTag: 0.1.0` | the release you want ([latest](https://github.com/IamMrCupp/apptracker/releases)) |
+| `deploy/flux/apptracker-kustomization.yaml` | `GitRepository` url + branch | your fork, or delete it and point at an existing source |
+| `deploy/flux/secret.sops.example.yaml` | `password`, `sessionKey` | real values — **encrypt before committing** |
+
+**Don't change the image name.** `ghcr.io/iammrcupp/apptracker` is the real
+published package and is already correct — only the tag is yours to pick.
+
+Images are published for `linux/amd64` and `linux/arm64`, so arm64 clusters
+(Raspberry Pi, Ampere nodes) work without a local build.
 
 Password and session key both come from a Secret named `apptracker-auth`, keys
 `password` and `sessionKey`. Don't commit it in plaintext — encrypt with SOPS or
