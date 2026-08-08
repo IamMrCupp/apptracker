@@ -76,6 +76,19 @@ func (a *Authenticator) checkPassword(pw string) bool {
 	return subtle.ConstantTimeCompare([]byte(pw), []byte(a.password)) == 1
 }
 
+// isTLS reports whether the request reached the app over HTTPS.
+//
+// X-Forwarded-Proto is only meaningful behind a proxy that sets it, which is
+// the intended deployment (an ingress terminating TLS). A client talking to the
+// app directly could spoof the header — but doing so only opts them into a
+// stricter cookie, so the blast radius is nil.
+func isTLS(r *http.Request) bool {
+	if r.TLS != nil {
+		return true
+	}
+	return strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+}
+
 // LoginHandler accepts {"password": "..."} and sets a session cookie on success.
 func (a *Authenticator) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if !a.Enabled() {
@@ -99,6 +112,7 @@ func (a *Authenticator) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Value:    a.sign(exp),
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   isTLS(r),
 		SameSite: http.SameSiteLaxMode,
 		Expires:  time.Unix(exp, 0),
 	})
@@ -107,8 +121,10 @@ func (a *Authenticator) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 // LogoutHandler clears the session cookie.
 func (a *Authenticator) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	// Attributes must match the cookie being cleared, or the browser keeps it.
 	http.SetCookie(w, &http.Cookie{
-		Name: cookieName, Value: "", Path: "/", HttpOnly: true, MaxAge: -1,
+		Name: cookieName, Value: "", Path: "/", HttpOnly: true,
+		Secure: isTLS(r), SameSite: http.SameSiteLaxMode, MaxAge: -1,
 	})
 	w.WriteHeader(http.StatusNoContent)
 }
