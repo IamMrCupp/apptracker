@@ -83,11 +83,10 @@ rolling update must never start a second pod against it.
 kubectl apply -k deploy/base            # (or let Flux do it)
 ```
 
-Password + session key: reference a Secret named `apptracker-auth` (keys `password`
-and `sessionKey`). Do not
-commit it in plaintext — encrypt with SOPS or use a SealedSecret (see
-`deploy/flux/secret.sops.example.yaml`). Or drop the `APP_PASSWORD` env block to
-run open inside the cluster.
+Password and session key both come from a Secret named `apptracker-auth`, keys
+`password` and `sessionKey`. Don't commit it in plaintext — encrypt with SOPS or
+use a SealedSecret (see `deploy/flux/secret.sops.example.yaml`). Or drop the
+`APP_PASSWORD` env block to run open inside the cluster.
 
 ## Backups
 
