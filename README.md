@@ -32,7 +32,7 @@ Dropdown defaults (edit in `web/static/app.js`): **Lane** Priority/Active/Backbu
 | `PORT`            | `8080`            | Listen port                                         |
 | `DB_PATH`         | `apptracker.db`   | SQLite file path                                    |
 | `APP_PASSWORD`    | *(empty)*         | Empty = open access. Set to require login.          |
-| `APP_SESSION_KEY` | *(random)*        | Stable HMAC key so sessions survive restarts.       |
+| `APP_SESSION_KEY` | *(random)*        | Stable HMAC key so sessions survive restarts. **Set this in any long-running deployment** — unset means a fresh random key each start, so every restart logs you out. Generate with `openssl rand -base64 48`. Changing it invalidates all sessions, which is also how you force a logout everywhere. |
 
 ## Run locally
 
@@ -83,7 +83,8 @@ rolling update must never start a second pod against it.
 kubectl apply -k deploy/base            # (or let Flux do it)
 ```
 
-Password: reference a Secret named `apptracker-auth` (key `password`). Don't
+Password + session key: reference a Secret named `apptracker-auth` (keys `password`
+and `sessionKey`). Do not
 commit it in plaintext — encrypt with SOPS or use a SealedSecret (see
 `deploy/flux/secret.sops.example.yaml`). Or drop the `APP_PASSWORD` env block to
 run open inside the cluster.
