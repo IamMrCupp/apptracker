@@ -24,7 +24,7 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - uses: golangci/golangci-lint-action@v8
+      - uses: golangci/golangci-lint-action@v9
         with:
           # Pinned to the version this config was written and verified against.
           version: v2.11.4
