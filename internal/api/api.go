@@ -28,7 +28,7 @@ func (s *Server) Routes() *http.ServeMux {
 	// Public endpoints (auth handled internally / not required).
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
-		io.WriteString(w, "ok")
+		_, _ = io.WriteString(w, "ok")
 	})
 	mux.HandleFunc("POST /api/login", s.Auth.LoginHandler)
 	mux.HandleFunc("POST /api/logout", s.Auth.LogoutHandler)

@@ -1,0 +1,23 @@
+version: "2"
+
+# Starting close to the defaults and adding deliberately, rather than enabling
+# everything and drowning in exclusions.
+linters:
+  default: standard # errcheck, govet, ineffassign, staticcheck, unused
+
+  exclusions:
+    presets:
+      # Suppresses errcheck on the conventionally-ignored calls: deferred
+      # Close/Flush, print-family, os.Setenv. Every finding in this repo's
+      # first run was one of those — `defer rows.Close()`, `defer stmt.Close()`,
+      # `io.WriteString(w, "ok")` in the healthz handler. Annotating nine call
+      # sites with //nolint would be noise, not signal.
+      - std-error-handling
+
+    rules:
+      # Tests assert on the values these calls populate, so a swallowed error
+      # surfaces immediately as a failed assertion rather than hiding.
+      - path: _test\.go
+        linters: [errcheck]
+
+# gofmt is already gated in .github/workflows/ci.yml — not duplicated here.
