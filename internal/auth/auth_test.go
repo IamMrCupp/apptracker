@@ -150,3 +150,88 @@ func TestCookieSecureOnDirectTLS(t *testing.T) {
 		t.Fatal("expected Secure when the request arrived over TLS")
 	}
 }
+
+// attempt drives one login with the given password and returns the status code.
+func attempt(t *testing.T, a *Authenticator, pw string) int {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/api/login",
+		strings.NewReader(`{"password":"`+pw+`"}`))
+	rr := httptest.NewRecorder()
+	a.LoginHandler(rr, req)
+	return rr.Code
+}
+
+func TestLoginLocksOutAfterRepeatedFailures(t *testing.T) {
+	a, err := New("hunter2", "test-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < maxLoginFailures; i++ {
+		if code := attempt(t, a, "wrong"); code != http.StatusUnauthorized {
+			t.Fatalf("attempt %d: got %d, want 401", i+1, code)
+		}
+	}
+	// One past the threshold: locked out, and the *correct* password must not
+	// get through either — otherwise the lockout is trivially bypassable.
+	if code := attempt(t, a, "wrong"); code != http.StatusTooManyRequests {
+		t.Fatalf("got %d, want 429 after %d failures", code, maxLoginFailures)
+	}
+	if code := attempt(t, a, "hunter2"); code != http.StatusTooManyRequests {
+		t.Fatalf("got %d, want 429 — lockout must apply to the correct password too", code)
+	}
+}
+
+func TestLockoutSetsRetryAfter(t *testing.T) {
+	a, err := New("hunter2", "test-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < maxLoginFailures; i++ {
+		attempt(t, a, "wrong")
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/login",
+		strings.NewReader(`{"password":"wrong"}`))
+	rr := httptest.NewRecorder()
+	a.LoginHandler(rr, req)
+	if got := rr.Header().Get("Retry-After"); got == "" {
+		t.Fatal("expected a Retry-After header on 429")
+	}
+}
+
+func TestLockoutExpires(t *testing.T) {
+	a, err := New("hunter2", "test-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := time.Now()
+	a.now = func() time.Time { return base }
+	for i := 0; i < maxLoginFailures; i++ {
+		attempt(t, a, "wrong")
+	}
+	if code := attempt(t, a, "hunter2"); code != http.StatusTooManyRequests {
+		t.Fatalf("got %d, want 429 while locked", code)
+	}
+	a.now = func() time.Time { return base.Add(lockoutWindow + time.Second) }
+	if code := attempt(t, a, "hunter2"); code != http.StatusNoContent {
+		t.Fatalf("got %d, want 204 once the lockout expired", code)
+	}
+}
+
+func TestSuccessResetsFailureCount(t *testing.T) {
+	a, err := New("hunter2", "test-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < maxLoginFailures-1; i++ {
+		attempt(t, a, "wrong")
+	}
+	if code := attempt(t, a, "hunter2"); code != http.StatusNoContent {
+		t.Fatalf("got %d, want 204 just under the threshold", code)
+	}
+	// Counter reset, so the budget is full again.
+	for i := 0; i < maxLoginFailures-1; i++ {
+		if code := attempt(t, a, "wrong"); code != http.StatusUnauthorized {
+			t.Fatalf("attempt %d after reset: got %d, want 401", i+1, code)
+		}
+	}
+}
