@@ -12,7 +12,7 @@ resources:
 # the annotation below; Flux image-automation could own this field instead.
 images:
   - name: ghcr.io/iammrcupp/apptracker
-    newTag: 0.2.0 # x-release-please-version
+    newTag: 0.3.0 # x-release-please-version
 
 # Password Secret is NOT stored in plaintext git — see deploy/flux/secret.sops.yaml
 # (encrypt with SOPS or use a SealedSecret). Referenced by name: apptracker-auth.
