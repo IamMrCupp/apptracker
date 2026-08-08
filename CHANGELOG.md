@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/IamMrCupp/apptracker/compare/apptracker-v0.3.0...apptracker-v0.4.0) (2026-08-08)
+
+
+### Features
+
+* **web:** capture postings from a bookmarklet via prefill params ([683e124](https://github.com/IamMrCupp/apptracker/commit/683e1247826ff8ba85544bfed673bc8dfac88ec1))
+
 ## [0.3.0](https://github.com/IamMrCupp/apptracker/compare/apptracker-v0.2.0...apptracker-v0.3.0) (2026-08-08)
 
 
