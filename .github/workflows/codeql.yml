@@ -42,7 +42,7 @@ jobs:
 
       # Pin the toolchain to go.mod so autobuild doesn't analyse against
       # whatever Go the runner image happens to ship.
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         if: matrix.language == 'go'
         with:
           go-version-file: go.mod
