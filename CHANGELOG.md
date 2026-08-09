@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0](https://github.com/IamMrCupp/apptracker/compare/apptracker-v0.4.0...apptracker-v0.5.0) (2026-08-09)
+
+
+### Features
+
+* **web:** capture presets, referrer channel and duplicate detection ([910303a](https://github.com/IamMrCupp/apptracker/commit/910303af3bc60608ccdbff3c30c79dcef3f34e42))
+* **web:** search, sort and overdue follow-up highlighting ([5f0ed42](https://github.com/IamMrCupp/apptracker/commit/5f0ed42f9c019c29c39210f5722beea8ebdd7941))
+
+
+### Bug Fixes
+
+* **web:** confirm before replace-all import ([027de04](https://github.com/IamMrCupp/apptracker/commit/027de04affea22c9bcd43f38d0a41908f0b28931))
+
 ## [0.4.0](https://github.com/IamMrCupp/apptracker/compare/apptracker-v0.3.0...apptracker-v0.4.0) (2026-08-08)
 
 
