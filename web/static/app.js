@@ -7,6 +7,10 @@ const STATUSES = ["Draft", "Applied", "Screening", "Interviewing", "Offer", "Rej
 
 let mode = "application";      // "application" | "networking"
 let entries = [];             // entries for the current mode
+let query = "";               // free-text filter
+let dueOnly = false;          // only entries whose follow-up has come due
+let sortKey = "";             // "" => newest first (id desc), the server order
+let sortAsc = true;
 
 // ---- tiny DOM helpers -------------------------------------------------
 const $ = (id) => document.getElementById(id);
@@ -108,10 +112,60 @@ async function load() {
   entries = await res.json();
   render();
 }
+// Local midnight, so "due today" means today in the user's timezone rather
+// than in UTC. Dates are stored as plain yyyy-mm-dd with no zone.
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// Due means "on or before today" — a follow-up dated today is due now, not
+// tomorrow. Entries with no follow-up date are never due.
+function isDue(e) {
+  return !!e.followUp && e.followUp <= today();
+}
+
+const SEARCH_FIELDS = ["entity", "context", "notes", "status", "lane", "channel", "comp"];
+
+function visibleEntries() {
+  let out = entries;
+
+  if (query) {
+    const q = query.toLowerCase();
+    out = out.filter((e) => SEARCH_FIELDS.some((f) => (e[f] || "").toLowerCase().includes(q)));
+  }
+  if (dueOnly) out = out.filter(isDue);
+
+  if (sortKey) {
+    out = out.slice().sort((a, b) => {
+      const av = (a[sortKey] || "").toString().toLowerCase();
+      const bv = (b[sortKey] || "").toString().toLowerCase();
+      // Blanks sort last in both directions — an empty follow-up date is not
+      // "earliest", it is "not set", and it should never top the list.
+      if (!av && !bv) return 0;
+      if (!av) return 1;
+      if (!bv) return -1;
+      return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+  }
+  return out;
+}
+
 function render() {
   const tbody = $("rows");
+  const rows = visibleEntries();
+  const filtering = !!query || dueOnly;
+
   $("empty").classList.toggle("hidden", entries.length > 0);
-  tbody.innerHTML = entries.map(rowHTML).join("");
+  $("no-match").classList.toggle("hidden", !(entries.length > 0 && rows.length === 0 && filtering));
+
+  document.querySelectorAll("th[data-sort]").forEach((th) => {
+    const active = th.dataset.sort === sortKey;
+    th.classList.toggle("sorted", active);
+    th.dataset.dir = active ? (sortAsc ? "asc" : "desc") : "";
+  });
+
+  tbody.innerHTML = rows.map(rowHTML).join("");
   tbody.querySelectorAll("[data-edit]").forEach((b) =>
     b.addEventListener("click", () => openEditor(Number(b.dataset.edit))));
   tbody.querySelectorAll("[data-del]").forEach((b) =>
@@ -120,7 +174,8 @@ function render() {
 function rowHTML(e) {
   const link = e.link
     ? `<a href="${esc(e.link)}" target="_blank" rel="noopener">open</a>` : "";
-  return `<tr>
+  const due = isDue(e);
+  return `<tr class="${due ? "due" : ""}">
     <td>${e.lane ? `<span class="pill">${esc(e.lane)}</span>` : ""}</td>
     <td class="col-kindlabel">${mode === "application" ? "Application" : "Contact"}</td>
     <td>${esc(e.entity)}</td>
@@ -128,7 +183,7 @@ function rowHTML(e) {
     <td>${esc(e.date)}</td>
     <td>${esc(e.channel)}</td>
     <td>${esc(e.comp)}</td>
-    <td>${esc(e.followUp)}</td>
+    <td>${e.followUp ? `<span class="${due ? "due-pill" : ""}" ${due ? 'title="Follow-up is due"' : ""}>${esc(e.followUp)}</span>` : ""}</td>
     <td>${e.status ? `<span class="pill">${esc(e.status)}</span>` : ""}</td>
     <td>${link}</td>
     <td><div class="notes">${esc(e.notes)}</div></td>
@@ -176,6 +231,24 @@ $("entry-form").addEventListener("submit", async (ev) => {
   if (res.ok) { closeEditor(); await load(); toast(id ? "Updated" : "Added"); }
   else { const j = await res.json().catch(() => ({})); toast(j.error || "Save failed", true); }
 });
+// ---- filtering & sorting ----------------------------------------------
+$("search").addEventListener("input", (e) => { query = e.target.value.trim(); render(); });
+$("due-only").addEventListener("change", (e) => { dueOnly = e.target.checked; render(); });
+$("clear-filters").addEventListener("click", (e) => {
+  e.preventDefault();
+  query = ""; dueOnly = false;
+  $("search").value = ""; $("due-only").checked = false;
+  render();
+});
+document.querySelectorAll("th[data-sort]").forEach((th) =>
+  th.addEventListener("click", () => {
+    const key = th.dataset.sort;
+    if (sortKey === key && sortAsc) sortAsc = false;
+    else if (sortKey === key) { sortKey = ""; sortAsc = true; }  // third click: back to newest-first
+    else { sortKey = key; sortAsc = true; }
+    render();
+  }));
+
 $("btn-cancel").addEventListener("click", closeEditor);
 $("btn-new").addEventListener("click", () => openEditor(0));
 
