@@ -214,10 +214,34 @@ $("data-menu").addEventListener("click", async (e) => {
 });
 function download(url) { window.location.href = url; }
 
+// Import wipes both modes, so the warning has to count both — not just the
+// entries currently on screen.
+async function countAllEntries() {
+  try {
+    const res = await api("/api/entries");
+    return (await res.json()).length;
+  } catch (e) {
+    return 0; // never block the import on a failed count
+  }
+}
+
 $("file-input").addEventListener("change", async (ev) => {
   const file = ev.target.files[0];
   if (!file) return;
   const text = await file.text();
+
+  // Import is replace-all across BOTH modes — the server does DELETE FROM
+  // entries before inserting. That is fine as a restore-a-snapshot design, but
+  // it must never happen because someone expected "import" to mean "add".
+  const total = await countAllEntries();
+  const warning = total > 0
+    ? `Replace ALL data with "${file.name}"?\n\n` +
+      `This deletes your ${total} existing ${total === 1 ? "entry" : "entries"} ` +
+      `across BOTH Applications and Networking, then loads the file.\n\n` +
+      `This cannot be undone. Export a backup first if you are unsure.`
+    : `Load "${file.name}" into the tracker?`;
+  if (!confirm(warning)) { ev.target.value = ""; return; }
+
   const res = await api("/api/import?format=" + pendingImportFormat, {
     method: "POST",
     headers: { "Content-Type": pendingImportFormat === "csv" ? "text/csv" : "application/json" },
