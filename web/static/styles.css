@@ -131,3 +131,21 @@ td a { color: var(--accent); }
   background: #4f7cff; color: #fff; text-decoration: none; font-weight: 600;
   cursor: grab;
 }
+
+/* search / filters / sorting */
+#search {
+  padding: .4rem .6rem; border-radius: 6px; min-width: 12rem;
+  border: 1px solid rgba(127,127,127,.35); background: transparent; color: inherit;
+}
+.chk { display: inline-flex; align-items: center; gap: .35rem; font-size: .9rem; white-space: nowrap; }
+th[data-sort] { cursor: pointer; user-select: none; }
+th[data-sort]:hover { text-decoration: underline; }
+th[data-sort].sorted::after { content: " ▲"; font-size: .7em; }
+th[data-sort].sorted[data-dir="desc"]::after { content: " ▼"; }
+
+/* a follow-up that has come due */
+tr.due { background: rgba(255, 176, 32, .07); }
+.due-pill {
+  background: rgba(255, 176, 32, .22); color: #ffb020;
+  padding: .1rem .45rem; border-radius: 999px; font-weight: 600;
+}

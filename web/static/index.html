@@ -25,6 +25,8 @@
         <button data-mode="networking" class="mode">Networking</button>
       </div>
       <div class="actions">
+        <input id="search" type="search" placeholder="Search…" autocomplete="off" />
+        <label class="chk"><input type="checkbox" id="due-only" /> Needs follow-up</label>
         <button id="btn-new" class="primary">+ New entry</button>
         <div class="menu">
           <button id="btn-data">Data ▾</button>
@@ -47,14 +49,18 @@
       <table id="grid">
         <thead>
           <tr>
-            <th>Lane</th><th class="col-kindlabel">Type</th><th>Company / Contact</th>
-            <th>Role / Context</th><th>Date</th><th>Channel</th><th>Comp</th>
-            <th>Follow up</th><th>Status</th><th>Link</th><th>Notes</th><th></th>
+            <th data-sort="lane">Lane</th><th class="col-kindlabel">Type</th>
+            <th data-sort="entity">Company / Contact</th>
+            <th data-sort="context">Role / Context</th><th data-sort="date">Date</th>
+            <th data-sort="channel">Channel</th><th data-sort="comp">Comp</th>
+            <th data-sort="followUp">Follow up</th><th data-sort="status">Status</th>
+            <th>Link</th><th>Notes</th><th></th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
       </table>
       <div id="empty" class="empty hidden">No entries yet. Hit “+ New entry” to add one.</div>
+      <div id="no-match" class="empty hidden">Nothing matches. <a href="#" id="clear-filters">Clear filters</a></div>
     </main>
   </div>
 
