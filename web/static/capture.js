@@ -7,7 +7,8 @@
 // Source of the bookmarklet, kept readable rather than pre-minified. __BASE__
 // is substituted below. Runs on arbitrary third-party pages, so it: touches no
 // globals, swallows its own errors, and only ever hands data to a URL.
-function capture(BASE) {
+function capture(BASE, PRESET) {
+  PRESET = PRESET || {};
   function jobPosting() {
     var found = null;
     var nodes = document.querySelectorAll('script[type="application/ld+json"]');
@@ -54,6 +55,16 @@ function capture(BASE) {
     return amount + (b.currency ? " " + b.currency : "") + unit;
   }
 
+  // Where did we come from? LinkedIn routes outbound links through a redirect
+  // and sets a referrer policy, so this often arrives empty — treat it as a
+  // bonus, never a requirement. The preset is the reliable path.
+  function channelFromReferrer() {
+    var r = document.referrer || "";
+    if (/(^|\.)linkedin\.com/i.test(r)) return "LinkedIn";
+    if (/(^|\.)(mail\.google|outlook)\./i.test(r)) return "Email";
+    return "";
+  }
+
   var j = jobPosting();
   var org = j.hiringOrganization || {};
   var params = {
@@ -63,24 +74,56 @@ function capture(BASE) {
     context: j.title || meta("og:title") || document.title,
     link: j.url || location.href,
     comp: salary(j),
-    notes: plain(j.description).slice(0, 1200)
+    notes: plain(j.description).slice(0, 1200),
+    channel: PRESET.channel || channelFromReferrer(),
+    status: PRESET.status || ""
   };
   if (typeof j.datePosted === "string" && /^\d{4}-\d{2}-\d{2}/.test(j.datePosted)) {
     params.date = j.datePosted.slice(0, 10);
   }
 
-  var url = new URL(BASE);
-  url.pathname = "/";
-  Object.keys(params).forEach(function (k) {
-    if (params[k]) url.searchParams.set(k, params[k]);
-  });
-  window.open(url.toString(), "_blank", "noopener");
+  function go() {
+    var url = new URL(BASE);
+    url.pathname = "/";
+    Object.keys(params).forEach(function (k) {
+      if (params[k]) url.searchParams.set(k, params[k]);
+    });
+    window.open(url.toString(), "_blank", "noopener");
+  }
+
+  // Workday and friends render their JSON-LD after first paint, so an
+  // immediate read returns nothing and looks like "this site is unsupported".
+  // Give it a couple of short retries before falling back to the page title.
+  if (!j.title && !j.hiringOrganization) {
+    var tries = 0;
+    var timer = setInterval(function () {
+      var late = jobPosting();
+      if (late.title || late.hiringOrganization || ++tries >= 6) {
+        clearInterval(timer);
+        if (late.title) params.context = late.title;
+        var lateOrg = late.hiringOrganization;
+        if (lateOrg) params.entity = (typeof lateOrg === "string" ? lateOrg : lateOrg.name) || params.entity;
+        if (late.url) params.link = late.url;
+        if (late.description) params.notes = plain(late.description).slice(0, 1200);
+        var lateComp = salary(late);
+        if (lateComp) params.comp = lateComp;
+        go();
+      }
+    }, 250);
+    return;
+  }
+  go();
 }
 
 (function build() {
   var origin = location.origin;
   document.getElementById("origin").textContent = origin;
 
-  var src = "(" + capture.toString() + ")(" + JSON.stringify(origin) + ")";
-  document.getElementById("bm").href = "javascript:" + encodeURIComponent(src);
+  function link(id, preset) {
+    var src = "(" + capture.toString() + ")(" +
+      JSON.stringify(origin) + "," + JSON.stringify(preset) + ")";
+    document.getElementById(id).href = "javascript:" + encodeURIComponent(src);
+  }
+  link("bm", {});
+  link("bm-linkedin", { channel: "LinkedIn", status: "Applied" });
 })();

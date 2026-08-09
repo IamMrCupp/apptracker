@@ -131,7 +131,6 @@ td a { color: var(--accent); }
   background: #4f7cff; color: #fff; text-decoration: none; font-weight: 600;
   cursor: grab;
 }
-
 /* search / filters / sorting */
 #search {
   padding: .4rem .6rem; border-radius: 6px; min-width: 12rem;
@@ -148,4 +147,13 @@ tr.due { background: rgba(255, 176, 32, .07); }
 .due-pill {
   background: rgba(255, 176, 32, .22); color: #ffb020;
   padding: .1rem .45rem; border-radius: 999px; font-weight: 600;
+}
+
+/* capture page + duplicate warning */
+.capture .muted { opacity: .75; font-size: .92rem; }
+.capture .bookmarklet + .bookmarklet { margin-left: .5rem; }
+.dupe {
+  background: rgba(255, 176, 32, .15); border: 1px solid rgba(255, 176, 32, .45);
+  color: #ffb020; padding: .55rem .75rem; border-radius: 8px;
+  margin-bottom: .75rem; font-size: .9rem;
 }

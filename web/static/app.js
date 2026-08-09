@@ -85,6 +85,8 @@ async function prefillFromQuery() {
     if (v && allowed.includes(v)) $("f-" + f).value = v;
   }
 
+  await warnIfDuplicate(q.get("link"));
+
   // Drop the params so a refresh does not reopen the editor with stale data.
   history.replaceState(null, "", location.pathname);
 }
@@ -211,7 +213,32 @@ function openEditor(id) {
   fillSelect($("f-status"), STATUSES, e.status);
   $("editor").classList.remove("hidden");
 }
-function closeEditor() { $("editor").classList.add("hidden"); }
+function closeEditor() {
+  $("editor").classList.add("hidden");
+  $("dupe-warn").classList.add("hidden");
+}
+
+// Capturing the same posting twice is easy to do and silently creates a second
+// row. Warn rather than block — re-applying to a role, or tracking a second
+// round, is legitimate.
+async function warnIfDuplicate(link) {
+  const warn = $("dupe-warn");
+  warn.classList.add("hidden");
+  if (!link) return;
+  let all = [];
+  try {
+    all = await (await api("/api/entries")).json();
+  } catch (e) {
+    return; // never let a failed check get in the way of saving
+  }
+  const hit = all.find((e) => e.link && e.link === link);
+  if (!hit) return;
+  warn.textContent =
+    `Heads up: you already have an entry for this link — ` +
+    `${hit.entity || "(no company)"}${hit.context ? " · " + hit.context : ""}` +
+    `${hit.status ? " · " + hit.status : ""}. Saving will add a second one.`;
+  warn.classList.remove("hidden");
+}
 
 $("entry-form").addEventListener("submit", async (ev) => {
   ev.preventDefault();
